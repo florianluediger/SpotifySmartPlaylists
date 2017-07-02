@@ -1,0 +1,5 @@
+tokenUrl = "https://accounts.spotify.com/api/token"
+authorizeUrl = "https://accounts.spotify.com/authorize"
+clientId = "your_client_id_here"
+clientSecret = "your_client_secret_here"
+spotifyBaseUrl = "https://api.spotify.com/v1"
