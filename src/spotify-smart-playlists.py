@@ -1,10 +1,11 @@
 import json
 import logging
-import constants
 
 import requests
 
+import constants
 from oauthtool import implicit_flow
+from playlist import Playlist
 
 
 def _authorize():
@@ -19,29 +20,31 @@ def _authorize():
     return auth_response["access_token"]
 
 
-access_token = _authorize()
+# Build an internal Playlist object from a Spotify playlist object
+def _build_playlist(idx, plist):
+    return Playlist(idx, plist["id"], plist["name"], plist["owner"]["id"], plist["tracks"]["total"],
+                    plist["tracks"]["href"], plist["public"])
 
+
+access_token = _authorize()
 token_param = {"access_token": access_token}
 
-playlists_request = requests.get(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists", params=token_param)
+playlists_request = requests.get(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists",
+                                 params=token_param)
 data = json.loads(playlists_request.text)
 
-list_track_dict = {}
-
+# Copy playlist data into internal object list
+playlists = []
 for i in range(0, data["total"] - 1):
-    list_track_dict[data["items"][i]["name"]] = data["items"][i]["tracks"]["href"]
+    playlists.append(_build_playlist(i, data["items"][i]))
 
 print("Your playlists are listed below")
-keys_string = str(list_track_dict.keys())
-pretty_keys_string = keys_string.replace("dict_keys(['", "").replace("'])", "").replace("', '", "\n")
-print(pretty_keys_string)
-correct_input = 0
-while not correct_input:
-    correct_input = 1
-    user_input = input("Type a comma seperated list of the playlists you want to include into generation: ").split(",")
+for p in playlists:
+    print("[" + str(p.internal_id) + "] " + p.name)
 
-    for l in user_input:
-        if l not in list_track_dict.keys():
-            print("At least one of your specified lists could not be found on Spotify, please try again.")
-            correct_input = 0
-print(user_input)
+user_input = -1
+while user_input not in range(0, len(playlists)):
+    user_input = input("Type the id of one of the playlists above for testing purposes: ")
+    user_input = 0 if user_input is "" else int(user_input)
+
+print(playlists[user_input].name)
