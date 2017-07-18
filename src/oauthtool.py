@@ -4,8 +4,8 @@ import threading
 import webbrowser
 from http.server import CGIHTTPRequestHandler, HTTPServer
 
-class OAuthRequestHandler(CGIHTTPRequestHandler):
 
+class OAuthRequestHandler(CGIHTTPRequestHandler):
     def do_GET(self):
         res = "../res"
         p = str(self.path)
@@ -42,7 +42,6 @@ class OAuthRequestHandler(CGIHTTPRequestHandler):
 
 
 class OAuthServer(HTTPServer):
-
     def __init__(self):
         # try to open http server on a free port
         ports = range(4795, 4800)
