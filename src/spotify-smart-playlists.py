@@ -27,20 +27,37 @@ def _build_playlist(idx, plist):
 
 
 access_token = _authorize()
-token_param = {"access_token": access_token}
 
+# Fetch playlists from spotify
+playlists_request_param = {"access_token": access_token,
+                           "limit": 50}
 playlists_request = requests.get(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists",
-                                 params=token_param)
-data = json.loads(playlists_request.text)
+                                 params=playlists_request_param)
+playlists_data = playlists_request.json()
 
 # Copy playlist data into internal object list
 playlists = []
-for i in range(0, data["total"] - 1):
-    playlists.append(_build_playlist(i, data["items"][i]))
+# TODO: Add support for more than 50 playlists
+for i in range(0, len(playlists_data["items"]) - 1):
+    playlists.append(_build_playlist(i, playlists_data["items"][i]))
 
+# Print fetched playlists
 print("Your playlists are listed below")
 for p in playlists:
     print("[" + str(p.internal_id) + "] " + p.name)
+
+# Create new playlist
+playlist_name = input("Enter a name for your new playlist: ")
+create_request_data = {"name": playlist_name,
+                       "public": "false"}
+create_request_param = {"access_token": access_token,
+                        "content_type": "application/json"}
+create_request = requests.post(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists",
+                               params=create_request_param, json=create_request_data)
+if create_request.status_code is not 201:
+    print("An error occurred while creating the new playlist, status code: " + create_request.status_code)
+    exit(1)
+create_data = create_request.json()
 
 user_input = -1
 while user_input not in range(0, len(playlists)):
