@@ -1,4 +1,3 @@
-import json
 import logging
 
 import requests
@@ -48,20 +47,25 @@ for p in playlists:
 
 # Create new playlist
 playlist_name = input("Enter a name for your new playlist: ")
+
 create_request_data = {"name": playlist_name,
                        "public": "false"}
 create_request_param = {"access_token": access_token,
                         "content_type": "application/json"}
 create_request = requests.post(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists",
                                params=create_request_param, json=create_request_data)
+
 if create_request.status_code is not 201:
     print("An error occurred while creating the new playlist, status code: " + create_request.status_code)
     exit(1)
-create_data = create_request.json()
+new_playlist_id = create_request.json()["id"]
 
-user_input = -1
-while user_input not in range(0, len(playlists)):
-    user_input = input("Type the id of one of the playlists above for testing purposes: ")
-    user_input = 0 if user_input is "" else int(user_input)
+base_lists = input("Type a comma seperated list of the playlist id's you want to use tracks from: ")
+base_lists = base_lists.split(",")
+track_objects = []
+for bl in base_lists:
+    track_objects = track_objects + playlists[int(bl)].fetch_tracks(access_token)
 
-print(playlists[user_input].name)
+track_uris = set()
+for track in track_objects:
+    track_uris.add(track["track"]["uri"])
