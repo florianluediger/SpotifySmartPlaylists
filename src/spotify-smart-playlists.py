@@ -42,64 +42,94 @@ def _get_uri_set_from_ids(id_list):
     return uris_no_local
 
 
+def _fetch_playlists():
+    # Fetch playlists from spotify
+    playlists_request_param = {"access_token": access_token,
+                               "limit": 50}
+    playlists_request = requests.get(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists",
+                                     params=playlists_request_param)
+    playlists_data = playlists_request.json()
+
+    # Copy playlist data into internal object list
+    plists = []
+    # TODO: Add support for more than 50 playlists
+    for i in range(0, len(playlists_data["items"]) - 1):
+        plists.append(_build_playlist(i, playlists_data["items"][i]))
+
+    return plists
+
+
+def _filter_tracks(base, remove):
+    base = base - remove
+
+    return list(base)
+
+
+def _generate_playlist(name, tracks):
+    create_request_data = {"name": name,
+                           "public": "false"}
+    create_request_param = {"access_token": access_token,
+                            "content_type": "application/json"}
+    create_request = requests.post(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists",
+                                   params=create_request_param, json=create_request_data)
+
+    if create_request.status_code is not 201:
+        print("An error occurred while creating the new playlist, status code: " + str(create_request.status_code))
+        exit(1)
+    new_playlist_id = create_request.json()["id"]
+
+    insert_request_param = {"access_token": access_token,
+                            "content_type": "application/json"}
+    start = 0
+    while start < len(tracks):
+        insert_request = requests.post(
+            constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists/" +
+            new_playlist_id + "/tracks",
+            params=insert_request_param, json=tracks[start:start + 100])
+        if insert_request.status_code is not 201:
+            print(
+                "An error occurred while inserting tracks into the new playlist, status code: " + str(
+                    insert_request.status_code))
+            exit(1)
+        start = start + 100
+
+    print("Successfully created new playlist!")
+
+
 access_token = _authorize()
 
-# Fetch playlists from spotify
-playlists_request_param = {"access_token": access_token,
-                           "limit": 50}
-playlists_request = requests.get(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists",
-                                 params=playlists_request_param)
-playlists_data = playlists_request.json()
+playlists = _fetch_playlists()
+base_uris = set()
+remove_uris = set()
 
-# Copy playlist data into internal object list
-playlists = []
-# TODO: Add support for more than 50 playlists
-for i in range(0, len(playlists_data["items"]) - 1):
-    playlists.append(_build_playlist(i, playlists_data["items"][i]))
-
-# Print fetched playlists
-print("Your playlists are listed below")
-for p in playlists:
-    print("[" + str(p.internal_id) + "] " + p.name)
-
-# Create new playlist
-playlist_name = input("Enter a name for your new playlist: ")
-
-create_request_data = {"name": playlist_name,
-                       "public": "false"}
-create_request_param = {"access_token": access_token,
-                        "content_type": "application/json"}
-create_request = requests.post(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists",
-                               params=create_request_param, json=create_request_data)
-
-if create_request.status_code is not 201:
-    print("An error occurred while creating the new playlist, status code: " + str(create_request.status_code))
-    exit(1)
-new_playlist_id = create_request.json()["id"]
-
-base_lists = input("Type a comma seperated list of the playlist id's you want to use tracks from: ")
-base_lists = base_lists.split(",")
-base_uris = _get_uri_set_from_ids(base_lists)
-
-remove_lists = input("Type a comma seperated list of the playlist id's you don't want any trakcks of: ")
-remove_lists = remove_lists.split(",")
-remove_uris = _get_uri_set_from_ids(remove_lists)
-
-base_uris = base_uris - remove_uris
-
-uri_list = list(base_uris)
-
-insert_request_param = {"access_token": access_token,
-                        "content_type": "application/json"}
-start = 0
-while start < len(uri_list):
-    insert_request = requests.post(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists/" +
-                                   new_playlist_id + "/tracks",
-                                   params=insert_request_param, json=uri_list[start:start + 100])
-    if insert_request.status_code is not 201:
-        print(
-            "An error occurred while inserting tracks into the new playlist, status code: " + str(insert_request.status_code))
-        exit(1)
-    start = start + 100
-
-print("Successfully created new playlist!")
+while 1:
+    print("### Menu ###")
+    print("[1] Print list of available playlists")
+    print("[2] Refresh list of playlists")
+    print("[3] Specify base playlists")
+    print("[4] Specify playlists to exclude tracks from")
+    print("[5] Generate new playlist")
+    print("[6] Exit")
+    selection = input("Choose one of the options listed above: ")
+    if selection == "1":
+        print("Your playlists are listed below")
+        for p in playlists:
+            print("[" + str(p.internal_id) + "] " + p.name)
+    elif selection == "2":
+        playlists = _fetch_playlists()
+    elif selection == "3":
+        base_lists = input("Type a comma seperated list of the playlist id's you want to use tracks from: ")
+        base_lists = base_lists.split(",")
+        base_uris = _get_uri_set_from_ids(base_lists)
+    elif selection == "4":
+        remove_lists = input("Type a comma seperated list of the playlist id's you don't want any trakcks of: ")
+        remove_lists = remove_lists.split(",")
+        remove_uris = _get_uri_set_from_ids(remove_lists)
+    elif selection == "5":
+        playlist_name = input("Enter a name for your new playlist: ")
+        result_tracks = _filter_tracks(base_uris, remove_uris)
+        _generate_playlist(playlist_name, result_tracks)
+    elif selection == "6":
+        break
+    else:
+        print("Please select one of the listed options")
