@@ -55,7 +55,7 @@ def _fetch_playlists():
         playlists_data = playlists_request.json()
 
         # Copy playlist data into internal object list
-        for i in range(0, len(playlists_data["items"]) - 1):
+        for i in range(0, len(playlists_data["items"])):
             plists.append(_build_playlist(idx, playlists_data["items"][i]))
             idx += 1
 
