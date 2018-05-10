@@ -44,17 +44,22 @@ def _get_uri_set_from_ids(id_list):
 
 def _fetch_playlists():
     # Fetch playlists from spotify
+    plists = []
     playlists_request_param = {"access_token": access_token,
                                "limit": 50}
-    playlists_request = requests.get(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists",
-                                     params=playlists_request_param)
-    playlists_data = playlists_request.json()
+    request_url = constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists"
 
-    # Copy playlist data into internal object list
-    plists = []
-    # TODO: Add support for more than 50 playlists
-    for i in range(0, len(playlists_data["items"]) - 1):
-        plists.append(_build_playlist(i, playlists_data["items"][i]))
+    idx = 0
+    while request_url:
+        playlists_request = requests.get(request_url, params=playlists_request_param)
+        playlists_data = playlists_request.json()
+
+        # Copy playlist data into internal object list
+        for i in range(0, len(playlists_data["items"]) - 1):
+            plists.append(_build_playlist(idx, playlists_data["items"][i]))
+            idx += 1
+
+        request_url = playlists_data["next"]
 
     return plists
 
