@@ -32,7 +32,8 @@ def _get_uri_set_from_ids(id_list):
 
     uris = set()
     for track in track_objects:
-        uris.add(track["track"]["uri"])
+        if (track["track"] != None):
+            uris.add(track["track"]["uri"])
 
     # delete local tracks from the set
     uris_no_local = set()
