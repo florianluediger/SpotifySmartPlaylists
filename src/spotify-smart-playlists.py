@@ -79,7 +79,7 @@ def _generate_playlist(name, tracks):
     create_request = requests.post(constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists",
                                    params=create_request_param, json=create_request_data)
 
-    if create_request.status_code is not 201:
+    if create_request.status_code != 201:
         print("An error occurred while creating the new playlist, status code: " + str(create_request.status_code))
         exit(1)
     new_playlist_id = create_request.json()["id"]
@@ -92,7 +92,7 @@ def _generate_playlist(name, tracks):
             constants.spotifyBaseUrl + "/users/" + constants.spotifyUser + "/playlists/" +
             new_playlist_id + "/tracks",
             params=insert_request_param, json=tracks[start:start + 100])
-        if insert_request.status_code is not 201:
+        if insert_request.status_code != 201:
             print(
                 "An error occurred while inserting tracks into the new playlist, status code: " + str(
                     insert_request.status_code))
